@@ -1,113 +1,166 @@
-import Image from "next/image";
+"use client"
+import React, { useState, useEffect, useRef } from 'react';
+import TableRow from './components/tableRow';
+import collegeData from '../../public/college.json'
 
-export default function Home() {
+type College = {
+  rank: string;
+  collegeName: string;
+  location: string;
+  fees: string;
+  averagePackage: string;
+  highestPackage: string;
+  userReviews: string;
+  ranking: string;
+  totalReviews: string;
+  outOf: string;
+  year: string;
+  cutOff: string;
+  isFeatured: boolean;
+  sup :string;
+};
+
+const HomePage: React.FC = () => {
+  const [displayData, setDisplayData] = useState<College[]>(collegeData.slice(0, 10));
+  const [index, setIndex] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortCriteria, setSortCriteria] = useState<keyof College | null>(null);
+  const [isAscending, setIsAscending] = useState(true);
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  const loadMoreData = () => {
+    const newData = collegeData.slice(index, index + 10);
+    setDisplayData((prevData) => [...prevData, ...newData]);
+    setIndex((prevIndex) => (prevIndex + 10) % collegeData.length);
+  };
+
+  const handleScroll = () => {
+    if (tableRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = tableRef.current;
+      if (scrollTop + clientHeight >= scrollHeight - 5) {
+        loadMoreData();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const currentRef = tableRef.current;
+    if (currentRef) {
+      currentRef.addEventListener('scroll', handleScroll);
+    }
+    return () => {
+      if (currentRef) {
+        currentRef.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [index]);
+
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const term = event.target.value.toLowerCase();
+    setSearchTerm(term);
+    const filteredData = collegeData.filter((college) =>
+      college.collegeName.toLowerCase().includes(term)
+    );
+    setDisplayData(filteredData.slice(0, 10));
+    setIndex(10);
+  };
+
+  const handleSort = (criteria: keyof College) => {
+    if (sortCriteria === criteria) {
+      setIsAscending(!isAscending);
+    } else {
+      setSortCriteria(criteria);
+      setIsAscending(true);
+    }
+
+    const sortedData = [...displayData].sort((a, b) => {
+      if (isAscending) {
+        return a[criteria] > b[criteria] ? 1 : -1;
+      } else {
+        return a[criteria] < b[criteria] ? 1 : -1;
+      }
+    });
+    setDisplayData(sortedData);
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+    <div className="p-8">
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search by college name"
+          value={searchTerm}
+          onChange={handleSearch}
+          className="p-2 border border-gray-300 rounded"
         />
+        <button
+          onClick={() => handleSort('ranking')}
+          className={`ml-2 p-2 border border-gray-300 rounded ${
+            sortCriteria === 'ranking' ? 'bg-[#7bbfc7] text-white' : 'bg-white text-black'
+          }`}
+        >
+          Sort by Ranking
+        </button>
+        <button
+          onClick={() => handleSort('fees')}
+          className={`ml-2 p-2 border border-gray-300 rounded ${
+            sortCriteria === 'fees' ? 'bg-[#7bbfc7] text-white' : 'bg-white text-black'
+          }`}
+        >
+          Sort by Fees
+        </button>
+        <button
+          onClick={() => handleSort('userReviews')}
+          className={`ml-2 p-2 border border-gray-300 rounded ${
+            sortCriteria === 'userReviews' ? 'bg-[#7bbfc7] text-white' : 'bg-white text-black'
+          }`}
+        >
+          Sort by User Reviews
+        </button>
+        <button
+          onClick={() => handleSort(sortCriteria!)}
+          className="ml-2 p-2 border border-gray-300 rounded"
+        >
+          {isAscending ? 'Descending' : 'Ascending'}
+        </button>
       </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+      <div className="overflow-auto max-h-[90vh] no-scrollbar" ref={tableRef}>
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-[#7bbfc7] sticky top-0 z-10 text-white">
+            <tr>
+              <th className="p-4 text-left">CD Rank</th>
+              <th className="p-4 text-left">Colleges</th>
+              <th className="p-4 text-left">Course Fees</th>
+              <th className="p-4 text-left">Placement</th>
+              <th className="p-4 text-left">User Reviews</th>
+              <th className="p-4 text-left">Ranking</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {displayData.map((college, index) => (
+              <TableRow
+                key={index}
+                rank={college.rank}
+                collegeName={college.collegeName}
+                location={college.location}
+                fees={college.fees}
+                averagePackage={college.averagePackage}
+                highestPackage={college.highestPackage}
+                userReviews={college.userReviews}
+                totalReviews={college.totalReviews}
+                ranking={college.ranking}
+                outOf={college.outOf}
+                year={college.year}
+                cutOff={college.cutOff}
+                isFeatured={college.isFeatured}
+                sup={college.sup}
+              />
+            ))}
+          </tbody>
+        </table>
       </div>
-    </main>
+    </div>
   );
-}
+};
+
+export default HomePage;
